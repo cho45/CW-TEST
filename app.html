@@ -1,0 +1,131 @@
+<link rel="import" href="bower_components/polymer/polymer.html">
+<link rel="import" href="bower_components/paper-item/paper-icon-item.html">
+<link rel="import" href="bower_components/paper-item/paper-item-body.html">
+<link rel="import" href="bower_components/paper-item/paper-item.html">
+<link rel="import" href="bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="bower_components/paper-ripple/paper-ripple.html">
+<link rel="import" href="bower_components/paper-header-panel/paper-header-panel.html">
+<link rel="import" href="bower_components/paper-button/paper-button.html">
+<link rel="import" href="bower_components/paper-input/paper-input.html">
+<link rel="import" href="bower_components/paper-input/paper-textarea.html">
+
+<dom-module id="my-app">
+	<style is="custom-style">
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			background: #ffffff;
+			border-radius: 3px;
+			border: 1px solid #e5e5e5;
+		}
+
+		table th {
+			@apply(--paper-font-body1);
+			padding: 12px 24px;
+			line-height: 56px;
+			font-size: 12px;
+			font-weight: 500;
+			color: #000;
+			text-align: left;
+			border-bottom: 1px solid;
+			border-color: var(--secondary-text-color);
+			opacity: var(--dark-secondary-opacity);
+		}
+		
+		table td {
+			@apply(--paper-font-body1);
+			padding: 12px 24px;
+			color: #000;
+			opacity: var(--dark-primary-opacity);
+		}
+
+		table tbody tr {
+			cursor: pointer;
+			overflow: hidden;
+			height: 48px;
+		}
+
+		table tbody tr:hover {
+			background: #fafafa;
+		}
+
+		table tbody tr:first-child {
+			margin-top: 8px;
+		}
+
+		paper-button.start {
+			color: #fff;
+			background-color: var(--paper-green-500);
+		}
+
+		paper-button.stop {
+			color: #fff;
+			background-color: var(--paper-red-500);
+		}
+
+		pre {
+			background: #efefef;
+			padding: 16px;
+		}
+	</style>
+	<template>
+		<div class="layout horizontal center-justified" style="padding: 16px 0">
+			<div class="flex" style="max-width: 600px">
+				<div class="layout horizontal">
+					<template is="dom-if" if="{{!running}}">
+						<paper-input class="" label="My Speed" value="{{mySpeed}}"></paper-input>
+						<div style="padding: 16px">
+							<paper-button class="start" raised on-click="start">Start</paper-button>
+						</div>
+					</template>
+					<template is="dom-if" if="{{running}}">
+						<paper-input class="" label="Remain" value="{{remain}}" readonly></paper-input>
+						<div class="flex" style="padding: 16px">
+							<paper-button class="stop" raised on-click="stop">Stop</paper-button>
+						</div>
+					</template>
+				</div>
+				<div class="layout horizontal center-center">
+					<paper-input label="CALL" class="flex-3" id="inputCall"></paper-input>
+					<paper-input label="#" class="flex-2" id="inputNumber"></paper-input>
+					<paper-button raised class="flex-1" on-click="action" data-action="CQ" tabindex="-1" disabled="{{!running}}">F1 CQ</paper-button>
+					<paper-button raised class="flex-1" on-click="action" data-action="#" tabindex="-1" disabled="{{!running}}">F2 #</paper-button>
+					<paper-button raised class="flex-1" on-click="action" data-action="TU" tabindex="-1" disabled="{{!running}}">F3 TU</paper-button>
+					<paper-button raised class="flex-1" on-click="action" data-action="NIL" tabindex="-1" disabled="{{!running}}">F4 NIL</paper-button>
+					<paper-button raised class="flex-1" on-click="action" data-action="HIS" tabindex="-1" disabled="{{!running}}">F5 HIS</paper-button>
+					<paper-button raised class="flex-1" on-click="action" data-action="?" tabindex="-1" disabled="{{!running}}">F6 ?</paper-button>
+				</div>
+				<div>
+					<pre>{{dialogue}}</pre>
+				</div>
+				<table>
+					<thead>
+						<tr class="">
+							<th>time</th>
+							<th>score</th>
+							<th>call</th>
+							<th>number</th>
+							<th>wpm</th>
+						</tr>
+					</thead>
+					<tbody>
+						<template is="dom-repeat" items="{{results}}" as="result">
+							<tr>
+								<td>{{result.time}}</td>
+								<td>{{result.score}}</td>
+								<td>{{result.call}}</td>
+								<td>{{result.number}}</td>
+								<td>{{result.wpm}}</td>
+							</tr>
+						</template>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</template>
+</dom-module>
+
+<script src="./levenshtein.min.js"></script>
+<script src="./String_random.js"></script>
+<script src="./morse.js"></script>
+<script src="app.js"></script>
