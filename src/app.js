@@ -162,15 +162,16 @@ Runner.prototype = {
 		self.masterGain.connect(compressor);
 		compressor.connect(context.destination);
 
+		var limit = 60 * 1;
 		self.elapsed = 0;
 		self.mainTimer = setInterval(function () {
 			self.elapsed++;
-			self.onprogress(self.elapsed);
-			// console.log(self.elapsed);
-			if (self.elapsed >= 60 * 3) {
+			self.onprogress(self.elapsed, limit);
+			if (self.elapsed >= limit) {
 				self.finish();
 			}
 		}, 1000);
+		self.onprogress(self.elapsed, limit);
 
 		self.finished = false;
 		self.results = [];
@@ -391,7 +392,7 @@ Runner.prototype = {
 
 	_checkResult : function () {
 		var self = this;
-		self.current.levenshtein = Levenshtein.get(self.current.anotherCall, self.current.call);
+		self.current.levenshtein = Levenshtein.get(self.current.anotherCall || "", self.current.call || "");
 		self.current.elapsed = self.elapsed;
 		if (self.current.levenshtein !== 0 || self.current.number != self.current.anotherNumber) {
 			self.current.score = 0;
@@ -410,7 +411,7 @@ Runner.prototype = {
 	_generateCall : function () {
 		var self = this;
 		var call = String_random(/(J[A-S][0-9]|7[KLMN][0-9]|8[J-N][0-9])[A-Z]{3}(\/[0-9])?/);
-		var number = self._formatNumber(Math.round(Math.random() * 3 * (self.elapsed + 1)));
+		var number = self._formatNumber(Math.round(Math.random() * (self.elapsed + 1)) + 1);
 		var buffer = self.player.createToneBuffer(call + number, {
 			gain: 0.7,
 			wpm : 20,
@@ -435,9 +436,9 @@ Polymer({
 	is: "my-app",
 
 	properties : {
-		mySpeed : {
-			type: Number,
-			value: 30
+		runOptions: {
+			type: Object,
+			notify: true
 		},
 
 		running: {
@@ -462,7 +463,21 @@ Polymer({
 
 		totalScore: {
 			type: Number
+		},
+
+		totalCount: {
+			type: Number
+		},
+
+		maxWpm : {
+			type: Number
 		}
+	},
+
+	initRunOptions : function () {
+		this.runOptions = {
+			speed: 30
+		};
 	},
 
 	start : function () {
@@ -471,14 +486,19 @@ Polymer({
 		self.running = true;
 		self.results = [];
 		self.dialogue = "";
-		self.totalScore = 0;
 
 		self.runner = new Runner();
-		self.runner.onprogress = function (n) {
-			self.set('remain', (3 * 60) - n);
+		self.runner.onprogress = function (n, limit) {
+			self.set('remain', limit - n);
 		};
 		self.runner.onresult = function (result) {
 			var copied = self.runner.results.slice(0);
+			for (var i = 0, it; (it = copied[i]); i++) {
+				it._class =
+					(it.levenshtein ? "invalid-call" : "valid-call") + " " +
+					(it.anotherNumber !== it.number ? "invalid-number" : "valid-number");
+			}
+			console.log(copied);
 			self.set('results', copied);
 		};
 		self.runner.onsent = function (dialogue) {
@@ -488,22 +508,26 @@ Polymer({
 				if (it.who == 'me') {
 					text += '> ' + it.text + "\n";
 				} else {
-					// text += '< ' + it.text.replace(self.runner.current.call, '******').replace(self.runner.current.number, '******') + "\n";
-					text += '< ' + it.text + "\n";
+					text += '< ' + it.text.replace(self.runner.current.call, '******').replace(self.runner.current.number, '******') + "\n";
 				}
 			}
 			self.set('dialogue', text);
 		};
 		self.runner.onfinish = function () {
 			var score = 0;
+			var maxWpm = 0;
 			for (var i = 0, it; (it = self.runner.results[i]); i++) {
 				score += it.score;
+				if (maxWpm < it.wpm) maxWpm = it.wpm;
 			}
 			self.set('totalScore', score);
+			self.set('maxWpm', maxWpm);
+			self.set('totalCount', self.runner.results.length);
 			self.stop();
+			self.$.totalScore.open();
 		};
 		self.runner.start({
-			wpm: self.mySpeed
+			wpm: self.runOptions.speed
 		});
 
 		self.$.inputCall.value = "";
@@ -528,6 +552,17 @@ Polymer({
 			this.runner.action(action);
 		}
 		this.$.inputCall.$.input.focus();
+	},
+
+	tweetScore : function () {
+		window.open(Location.parse('https://twitter.com/intent/tweet').params({
+			text :
+				'New Score: ' + this.totalScore + 'pt\n' + 
+				'Count: ' + this.totalCount + 'qso\n' + 
+				'Max Speed: ' + this.maxWpm + 'wpm',
+			url : location.href,
+			hashtags: 'CWTEST'
+		}).href, null, "width=600,height=600");
 	},
 
 	ready: function() {
@@ -603,5 +638,12 @@ Polymer({
 			this.$.input.selectionStart = selection;
 			this.$.input.selectionEnd = selection;
 		});
+
+//		self.async(function () {
+//			self.set('totalCount', 10);
+//			self.set('totalScore', 0);
+//			self.set('maxWpm', 30);
+//			self.$.totalScore.open();
+//		}, 100);
 	}
 });

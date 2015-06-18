@@ -8,6 +8,8 @@
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../bower_components/paper-input/paper-textarea.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../bower_components/iron-localstorage/iron-localstorage.html">
 
 <dom-module id="my-app">
 	<style is="custom-style">
@@ -67,65 +69,148 @@
 			background: #efefef;
 			padding: 16px;
 		}
+
+		.input paper-button {
+			font-size: 12px;
+		}
+
+		.result {
+			padding-bottom: 16px;
+		}
+
+		.result .total ,
+		.result .speed  {
+			padding: 10px 0;
+		}
+
+		.result .total .number ,
+		.result .speed .number {
+			font-size: 200%;
+		}
+
+		.result .total .number {
+			color: var(--paper-blue-500);
+		}
+
+		.result .speed .number {
+			color: var(--paper-cyan-500);
+		}
+
+		.buttons .tweet {
+			color: #fff;
+			background: var(--paper-blue-500);
+		}
+		
+		.buttons .close {
+			color: var(--paper-grey-500);
+		}
+
+		paper-toolbar {
+			--paper-toolbar-background: var(--paper-cyan-500);
+		}
+
+		#log tr.invalid-call .call {
+			background: var(--paper-red-100);
+		}
+
+		#log tr.invalid-number .number {
+			background: var(--paper-red-100);
+		}
 	</style>
 	<template>
-		<div class="layout horizontal center-justified" style="padding: 16px 0">
-			<div class="flex" style="max-width: 600px">
-				<div class="layout horizontal">
-					<template is="dom-if" if="{{!running}}">
-						<paper-input class="" label="My Speed" value="{{mySpeed}}"></paper-input>
-						<div style="padding: 16px">
-							<paper-button class="start" raised on-click="start">Start</paper-button>
+		<paper-header-panel mode="seamed">
+			<paper-toolbar>
+				<div class="layout horizontal center-justified" style="padding: 16px 0; width: 100%">
+					<div class="flex" style="max-width: 600px">CW-TEST</div>
+				</div>
+			</paper-toolbar>
+			<div>
+				<div class="layout horizontal center-justified" style="padding: 16px 0">
+					<div class="flex" style="max-width: 600px">
+						<div class="layout horizontal">
+							<template is="dom-if" if="{{!running}}">
+								<iron-localstorage name="cw-test-runoptions"
+									value="{{runOptions}}"
+									on-iron-localstorage-load-empty="initRunOptions"
+									></iron-localstorage>
+								<paper-input class="" label="My Speed" value="{{runOptions.speed}}"></paper-input>
+								<div style="padding: 16px">
+									<paper-button class="start" raised on-click="start">Start</paper-button>
+								</div>
+							</template>
+							<template is="dom-if" if="{{running}}">
+								<paper-input class="" label="Remain" value="{{remain}}" readonly></paper-input>
+								<div class="flex" style="padding: 16px">
+									<paper-button class="stop" raised on-click="stop">Stop</paper-button>
+								</div>
+							</template>
 						</div>
-					</template>
-					<template is="dom-if" if="{{running}}">
-						<paper-input class="" label="Remain" value="{{remain}}" readonly></paper-input>
-						<div class="flex" style="padding: 16px">
-							<paper-button class="stop" raised on-click="stop">Stop</paper-button>
+						<div class="layout horizontal center-center input">
+							<paper-input label="CALL" class="flex-3" id="inputCall" disabled="{{!running}}"></paper-input>
+							<paper-input label="#" class="flex-2" id="inputNumber" disabled="{{!running}}"></paper-input>
+							<paper-button raised class="flex-1" on-click="action" data-action="CQ" tabindex="-1" disabled="{{!running}}">F1 CQ</paper-button>
+							<paper-button raised class="flex-1" on-click="action" data-action="#" tabindex="-1" disabled="{{!running}}">F2 #</paper-button>
+							<paper-button raised class="flex-1" on-click="action" data-action="TU" tabindex="-1" disabled="{{!running}}">F3 TU</paper-button>
+							<paper-button raised class="flex-1" on-click="action" data-action="NIL" tabindex="-1" disabled="{{!running}}">F4 NIL</paper-button>
+							<paper-button raised class="flex-1" on-click="action" data-action="HIS" tabindex="-1" disabled="{{!running}}">F5 HIS</paper-button>
+							<paper-button raised class="flex-1" on-click="action" data-action="?" tabindex="-1" disabled="{{!running}}">F6 ?</paper-button>
 						</div>
-					</template>
+						<div>
+							<pre>{{dialogue}}</pre>
+						</div>
+						<table id="log">
+							<thead>
+								<tr class="">
+									<th>time</th>
+									<th>score</th>
+									<th>call</th>
+									<th>number</th>
+									<th>wpm</th>
+								</tr>
+							</thead>
+							<tbody>
+								<template is="dom-repeat" items="{{results}}" as="result">
+									<tr class$="{{result._class}}">
+										<td>{{result.time}}</td>
+										<td>{{result.score}}</td>
+										<td class="call">{{result.call}}</td>
+										<td class="number">{{result.number}}</td>
+										<td>{{result.wpm}}</td>
+									</tr>
+								</template>
+							</tbody>
+						</table>
+					</div>
 				</div>
-				<div class="layout horizontal center-center">
-					<paper-input label="CALL" class="flex-3" id="inputCall"></paper-input>
-					<paper-input label="#" class="flex-2" id="inputNumber"></paper-input>
-					<paper-button raised class="flex-1" on-click="action" data-action="CQ" tabindex="-1" disabled="{{!running}}">F1 CQ</paper-button>
-					<paper-button raised class="flex-1" on-click="action" data-action="#" tabindex="-1" disabled="{{!running}}">F2 #</paper-button>
-					<paper-button raised class="flex-1" on-click="action" data-action="TU" tabindex="-1" disabled="{{!running}}">F3 TU</paper-button>
-					<paper-button raised class="flex-1" on-click="action" data-action="NIL" tabindex="-1" disabled="{{!running}}">F4 NIL</paper-button>
-					<paper-button raised class="flex-1" on-click="action" data-action="HIS" tabindex="-1" disabled="{{!running}}">F5 HIS</paper-button>
-					<paper-button raised class="flex-1" on-click="action" data-action="?" tabindex="-1" disabled="{{!running}}">F6 ?</paper-button>
-				</div>
-				<div>
-					<pre>{{dialogue}}</pre>
-				</div>
-				<table>
-					<thead>
-						<tr class="">
-							<th>time</th>
-							<th>score</th>
-							<th>call</th>
-							<th>number</th>
-							<th>wpm</th>
-						</tr>
-					</thead>
-					<tbody>
-						<template is="dom-repeat" items="{{results}}" as="result">
-							<tr>
-								<td>{{result.time}}</td>
-								<td>{{result.score}}</td>
-								<td>{{result.call}}</td>
-								<td>{{result.number}}</td>
-								<td>{{result.wpm}}</td>
-							</tr>
-						</template>
-					</tbody>
-				</table>
 			</div>
-		</div>
+		</paper-header-panel>
+
+		<paper-dialog id="totalScore" entry-animation="scale-up-animation" exit-animation="fade-out-animation" no-cancel-on-outside-click style="width: 350px" with-backdrop>
+			<h2>Results</h2>
+			<div class="result layout vertical">
+				<div class="total layout horizontal">
+					<div class="flex">Total Score:</div>
+					<div class="flex"><span class="number">{{totalScore}}</span> pt</div>
+				</div>
+				<div class="total layout horizontal">
+					<div class="flex">Total Count:</div>
+					<div class="flex"><span class="number">{{totalCount}}</span> qso</div>
+				</div>
+				<div class="speed layout horizontal">
+					<div class="flex">Max Speed:</div>
+					<div class="flex"><span class="number">{{maxWpm}}</span> wpm</div>	
+				</div>
+			</div>
+			<div class="buttons">
+				<paper-button autofocus on-click="tweetScore" class="tweet">Tweet</paper-button>
+				<paper-button dialog-dismiss class="close">Close</paper-button>
+			</div>
+		</paper-dialog>
 	</template>
 </dom-module>
 
 <script src="./levenshtein.min.js"></script>
 <script src="./String_random.js"></script>
+<script src="./micro-location.js"></script>
 <script src="./morse.js"></script>
 <script src="app.js"></script>
