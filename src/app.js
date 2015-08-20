@@ -162,7 +162,7 @@ Runner.prototype = {
 		self.masterGain.connect(compressor);
 		compressor.connect(context.destination);
 
-		var limit = 60 * 1;
+		var limit = 60 * 3;
 		self.elapsed = 0;
 		self.mainTimer = setInterval(function () {
 			self.elapsed++;
@@ -410,21 +410,22 @@ Runner.prototype = {
 
 	_generateCall : function () {
 		var self = this;
-		var call = String_random(/(J[A-S][0-9]|7[KLMN][0-9]|8[J-N][0-9])[A-Z]{3}(\/[0-9])?/);
+		var call = randomCallsign();
 		var number = self._formatNumber(Math.round(Math.random() * (self.elapsed + 1)) + 1);
 		var buffer = self.player.createToneBuffer(call + number, {
 			gain: 0.7,
 			wpm : 20,
 			tone : 600
 		});
-		var score = Math.round(buffer.duration * 1000);
+		var wpm = self.opts.wpm - Math.round(Math.random() * self.opts.wpm * 0.5);
+		var score = Math.round(buffer.duration * 1000 * (wpm * wpm / 100));
 
 		self.current = {
 			score : score,
 			number: number,
 			call: call,
 			gain: 0.20 + Math.random() * 0.50,
-			wpm : self.opts.wpm - Math.round(Math.random() * self.opts.wpm * 0.5),
+			wpm : wpm,
 			tone : 400 + Math.random() * 500,
 			dialogue: [],
 			count : 0
